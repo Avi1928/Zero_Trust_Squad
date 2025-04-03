@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHA-256 Hash Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            margin: auto;
+        }
+        input, select, button {
+            margin: 10px;
+            padding: 10px;
+            width: 90%;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #output {
+            margin-top: 20px;
+            word-wrap: break-word;
+            text-align: left;
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 450px;
+            margin: auto;
+        }
+        #comparisonResult {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>SHA-256 & Salted SHA-256 Hash Generator</h2>
+        <label for="hashType">Select Hash Type:</label>
+        <select id="hashType">
+            <option value="sha256">SHA-256</option>
+            <option value="salted">Salted SHA-256</option>
+        </select>
+        <br>
+        <input type="text" id="password" placeholder="Enter password">
+        <br>
+        <input type="number" id="iterations" placeholder="Iterations" min="1" value="1">
+        <br>
+        <button onclick="generateHash()">Generate Hash</button>
+        <h3>Output:</h3>
+        <div id="output"></div>
+        <div id="comparisonResult"></div>
+    </div>
+
+    <script>
+        async function sha256(message) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(message);
+            const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+            return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function generateSalt(length = 16) {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let salt = '';
+            for (let i = 0; i < length; i++) {
+                salt += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return salt;
+        }
+
+        async function generateHash() {
+            const password = document.getElementById("password").value;
+            const hashType = document.getElementById("hashType").value;
+            const iterations = parseInt(document.getElementById("iterations").value);
+            let output = "";
+            let hashes = [];
+            
+            console.log("Initial password:", password);
+            
+            for (let i = 0; i < iterations; i++) {
+                let hash;
+                if (hashType === "salted") {
+                    const salt = generateSalt();
+                    hash = await sha256(salt + password);
+                    output += `Iteration ${i + 1}: ${hash} (Salt: ${salt})<br>`;
+                } else {
+                    hash = await sha256(password);
+                    output += `Iteration ${i + 1}: ${hash}<br>`;
+                }
+                hashes.push(hash);
+                console.log(`Iteration ${i + 1}:`, hash);
+            }
+            document.getElementById("output").innerHTML = output;
+            compareHashes(hashes);
+        }
+
+        function compareHashes(hashes) {
+            const allSame = hashes.every(hash => hash === hashes[0]);
+            document.getElementById("comparisonResult").innerText = allSame ? "All generated hashes are the same." : "Generated hashes are different.";
+        }
+    </script>
+</body>
+</html>
